@@ -1,0 +1,42 @@
+FROM debian:stretch
+MAINTAINER Christophe DANIEL <cda@migennes.com>
+# https://github.com/haxetink/tink_http/issues/31
+
+
+# Basic Requirements
+# RUN echo "deb http://httpredir.debian.org/debian stretch main" >> /etc/apt/sources.list
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y apache2 neko wget curl mariadb-client imagemagick libapache2-mod-neko unzip vim-tiny python-setuptools
+# RUN apt-get -y upgrade
+
+ENV APACHE_RUN_USER www-data
+ENV APACHE_RUN_GROUP www-data
+ENV APACHE_LOG_DIR /var/log/apache2
+
+# apache config
+RUN a2enmod neko
+RUN a2enmod rewrite
+
+RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
+
+RUN su -l www-data -s /bin/bash && \
+    mkdir /var/www/cagette && \
+    cd /var/www/cagette && \
+    wget http://www.cagette.net/cagette.tar && \
+    tar -xvf cagette.tar && \
+    mkdir /var/www/cagette/tmp && \
+    chown -R www-data:www-data /var/www/cagette/tmp /var/www/cagette/www/file
+#    chmod -R 777 /var/www/cagette/tmp /var/www/cagette/file
+
+	
+ADD config.xml.dist /var/www/cagette/config.xml
+ADD cagette.conf /etc/apache2/conf-available/cagette.conf
+ADD cagette-site.conf /etc/apache2/sites-available/cagette.conf
+
+RUN a2dissite 000-default.conf && \
+    a2enconf cagette && \
+    a2ensite cagette
+
+# Clean up APT when done.
+RUN DEBIAN_FRONTEND=noninteractive apt-get autoclean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+CMD ["/usr/sbin/apache2ctl", "-D", "FOREGROUND"]

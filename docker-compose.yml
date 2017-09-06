@@ -1,0 +1,28 @@
+# Adopt version 2 syntax:
+#   https://docs.docker.com/compose/compose-file/#/versioning
+version: '2'
+services:
+
+   cagette:
+      build:
+         context: .
+         dockerfile: Dockerfile-cagette
+#      environment:
+#         - ALLOW_OVERRIDE=true
+      ports:
+         - "80:80"
+      links:
+         - db
+
+
+   db:
+      image: mariadb:10.1.26
+#      restart: always
+#      volumes:
+#         - ./mysql:/var/lib/mysql
+      environment:
+#         MYSQL_RANDOM_ROOT_PASSWORD: "YES"
+         MYSQL_ALLOW_EMPTY_PASSWORD: "YES"
+         MYSQL_USER: cagette
+         MYSQL_PASSWORD: cagette
+         MYSQL_DATABASE: cagette
